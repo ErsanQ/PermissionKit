@@ -1,35 +1,29 @@
 import Foundation
 
-/// The current status of a permission request.
-public enum PermissionStatus: String, Codable, Sendable {
-    /// The user has granted authorization.
-    case authorized
-    /// The user has explicitly denied authorization.
-    case denied
-    /// The user has not yet made a choice regarding this application.
-    case notDetermined
-    /// The application is not authorized to use the service.
-    case restricted
-    /// The user has granted limited authorization (e.g., photo library access).
-    case limited
+/// The types of system permissions supported by `PermissionKit`.
+public enum PermissionType: String, CaseIterable, Sendable {
+    /// Access to the device's camera for photo or video capture.
+    case camera
+    /// Access to the user's photo library (Read/Write).
+    case photoLibrary
+    /// The ability to send local or remote notifications.
+    case notifications
+    /// Access to the App Tracking Transparency identifier.
+    case tracking
+    /// Access to the device's microphone for audio recording.
+    case microphone
 }
 
-/// The types of permissions supported by `PermissionKit`.
-public enum PermissionType: String, CaseIterable, Sendable {
-    case camera
-    case photoLibrary
-    case notifications
-    case tracking
-    case microphone
-    
-    /// The Info.plist key required for this permission.
-    public var usageDescriptionKey: String {
-        switch self {
-        case .camera: return "NSCameraUsageDescription"
-        case .photoLibrary: return "NSPhotoLibraryUsageDescription"
-        case .notifications: return "N/A"
-        case .tracking: return "NSUserTrackingUsageDescription"
-        case .microphone: return "NSMicrophoneUsageDescription"
-        }
-    }
+/// The current state of a requested permission.
+public enum PermissionStatus: String, Sendable {
+    /// The user has explicitly granted access.
+    case authorized
+    /// The user has explicitly denied access.
+    case denied
+    /// The user has not yet been prompted for this permission.
+    case notDetermined
+    /// Access is restricted (e.g., due to parental controls).
+    case restricted
+    /// Access is limited (specific to the Photo Library in iOS 14+).
+    case limited
 }

@@ -17,7 +17,18 @@ import UserNotifications
 import AppTrackingTransparency
 #endif
 
-/// A manager responsible for handling permission requests and checking status.
+/// A central manager responsible for handling permission requests and status checks across the ErsanQ ecosystem.
+///
+/// `PermissionManager` provides a modern, `async/await` based API that wraps Apple's various permission
+/// frameworks (AVFoundation, PHPhotoLibrary, etc.) into a unified interface.
+///
+/// ## Usage
+/// ```swift
+/// let status = await PermissionManager.shared.request(for: .camera)
+/// if status == .authorized {
+///     startCamera()
+/// }
+/// ```
 @MainActor
 public final class PermissionManager: ObservableObject {
     
@@ -26,9 +37,13 @@ public final class PermissionManager: ObservableObject {
     
     private init() {}
     
-    /// Requests the specified permission and returns the resulting status.
-    /// - Parameter type: The type of permission to request.
-    /// - Returns: The updated `PermissionStatus`.
+    /// Requests the specified permission from the system.
+    ///
+    /// If the permission has already been determined (Authorized or Denied), this method
+    /// returns the current status immediately without prompting the user.
+    ///
+    /// - Parameter type: The type of permission to request (e.g., `.camera`).
+    /// - Returns: The resulting `PermissionStatus` after the request completes.
     public func request(for type: PermissionType) async -> PermissionStatus {
         switch type {
         case .camera:
@@ -44,7 +59,8 @@ public final class PermissionManager: ObservableObject {
         }
     }
     
-    /// Checks the current status of the specified permission asynchronously.
+    /// Checks the current status of the specified permission without prompting the user.
+    ///
     /// - Parameter type: The type of permission to check.
     /// - Returns: The current `PermissionStatus`.
     public func status(for type: PermissionType) async -> PermissionStatus {
