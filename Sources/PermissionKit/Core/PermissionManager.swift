@@ -1,11 +1,21 @@
 import Foundation
+import SwiftUI
+
+#if canImport(AVFoundation)
 import AVFoundation
+#endif
+
+#if canImport(Photos)
 import Photos
+#endif
+
+#if canImport(UserNotifications)
 import UserNotifications
+#endif
+
 #if canImport(AppTrackingTransparency)
 import AppTrackingTransparency
 #endif
-import SwiftUI
 
 /// A manager responsible for handling permission requests and checking status.
 @MainActor
@@ -55,6 +65,7 @@ public final class PermissionManager: ObservableObject {
     // MARK: - Camera
     
     private func requestCamera() async -> PermissionStatus {
+        #if canImport(AVFoundation)
         let status = AVCaptureDevice.authorizationStatus(for: .video)
         guard status == .notDetermined else {
             return mapAVStatus(status)
@@ -65,15 +76,23 @@ public final class PermissionManager: ObservableObject {
                 continuation.resume(returning: granted ? .authorized : .denied)
             }
         }
+        #else
+        return .denied
+        #endif
     }
     
     private func checkCameraStatus() -> PermissionStatus {
+        #if canImport(AVFoundation)
         return mapAVStatus(AVCaptureDevice.authorizationStatus(for: .video))
+        #else
+        return .denied
+        #endif
     }
     
     // MARK: - Microphone
     
     private func requestMicrophone() async -> PermissionStatus {
+        #if canImport(AVFoundation)
         let status = AVCaptureDevice.authorizationStatus(for: .audio)
         guard status == .notDetermined else {
             return mapAVStatus(status)
@@ -84,15 +103,23 @@ public final class PermissionManager: ObservableObject {
                 continuation.resume(returning: granted ? .authorized : .denied)
             }
         }
+        #else
+        return .denied
+        #endif
     }
     
     private func checkMicrophoneStatus() -> PermissionStatus {
+        #if canImport(AVFoundation)
         return mapAVStatus(AVCaptureDevice.authorizationStatus(for: .audio))
+        #else
+        return .denied
+        #endif
     }
     
     // MARK: - Photo Library
     
     private func requestPhotoLibrary() async -> PermissionStatus {
+        #if canImport(Photos)
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         guard status == .notDetermined else {
             return mapPHStatus(status)
@@ -103,15 +130,23 @@ public final class PermissionManager: ObservableObject {
                 continuation.resume(returning: self.mapPHStatus(newStatus))
             }
         }
+        #else
+        return .denied
+        #endif
     }
     
     private func checkPhotoLibraryStatus() -> PermissionStatus {
+        #if canImport(Photos)
         return mapPHStatus(PHPhotoLibrary.authorizationStatus(for: .readWrite))
+        #else
+        return .denied
+        #endif
     }
     
     // MARK: - Notifications
     
     private func requestNotifications() async -> PermissionStatus {
+        #if canImport(UserNotifications)
         do {
             let options: UNAuthorizationOptions = [.alert, .badge, .sound]
             let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: options)
@@ -119,9 +154,13 @@ public final class PermissionManager: ObservableObject {
         } catch {
             return .denied
         }
+        #else
+        return .denied
+        #endif
     }
     
     private func checkNotificationsStatus() async -> PermissionStatus {
+        #if canImport(UserNotifications)
         return await withCheckedContinuation { continuation in
             UNUserNotificationCenter.current().getNotificationSettings { settings in
                 let status: PermissionStatus
@@ -134,25 +173,24 @@ public final class PermissionManager: ObservableObject {
                 continuation.resume(returning: status)
             }
         }
+        #else
+        return .denied
+        #endif
     }
     
     // MARK: - Tracking
     
     private func requestTracking() async -> PermissionStatus {
         #if canImport(AppTrackingTransparency)
-        if #available(iOS 14, macOS 11, *) {
-            let status = ATTrackingManager.trackingAuthorizationStatus
-            guard status == .notDetermined else {
-                return mapTrackingStatus(status)
+        let status = ATTrackingManager.trackingAuthorizationStatus
+        guard status == .notDetermined else {
+            return mapTrackingStatus(status)
+        }
+        
+        return await withCheckedContinuation { continuation in
+            ATTrackingManager.requestTrackingAuthorization { newStatus in
+                continuation.resume(returning: self.mapTrackingStatus(newStatus))
             }
-            
-            return await withCheckedContinuation { continuation in
-                ATTrackingManager.requestTrackingAuthorization { newStatus in
-                    continuation.resume(returning: self.mapTrackingStatus(newStatus))
-                }
-            }
-        } else {
-            return .authorized
         }
         #else
         return .authorized
@@ -161,15 +199,15 @@ public final class PermissionManager: ObservableObject {
     
     private func checkTrackingStatus() -> PermissionStatus {
         #if canImport(AppTrackingTransparency)
-        if #available(iOS 14, macOS 11, *) {
-            return mapTrackingStatus(ATTrackingManager.trackingAuthorizationStatus)
-        }
-        #endif
+        return mapTrackingStatus(ATTrackingManager.trackingAuthorizationStatus)
+        #else
         return .authorized
+        #endif
     }
     
     // MARK: - Mapping Helpers
     
+    #if canImport(AVFoundation)
     private func mapAVStatus(_ status: AVAuthorizationStatus) -> PermissionStatus {
         switch status {
         case .authorized: return .authorized
@@ -179,7 +217,9 @@ public final class PermissionManager: ObservableObject {
         @unknown default: return .denied
         }
     }
+    #endif
     
+    #if canImport(Photos)
     private func mapPHStatus(_ status: PHAuthorizationStatus) -> PermissionStatus {
         switch status {
         case .authorized: return .authorized
@@ -190,6 +230,7 @@ public final class PermissionManager: ObservableObject {
         @unknown default: return .denied
         }
     }
+    #endif
     
     #if canImport(AppTrackingTransparency)
     private func mapTrackingStatus(_ status: ATTrackingManager.AuthorizationStatus) -> PermissionStatus {
