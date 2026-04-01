@@ -24,7 +24,6 @@ let package = Package(
             path: "Sources/PermissionKit"),
         .testTarget(
             name: "PermissionKitTests",
-            dependencies: ["PermissionKit"],
-            path: "Tests/PermissionKitTests"),
+            dependencies: ["PermissionKit"]),
     ]
 )
