@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import Foundation
 import SwiftUI
 
@@ -260,3 +261,4 @@ public final class PermissionManager: ObservableObject {
     }
     #endif
 }
+#endif
